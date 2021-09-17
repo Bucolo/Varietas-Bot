@@ -1,1 +1,1 @@
-# VarietasBot
+<h1><img src="https://varietas.xyz/images/VarietasStillLogoGreenTrans.png" width="10%"> Varietas Bot (Public Version) <img src="https://varietas.xyz/images/VarietasStillLogoGreenTrans.png" width="10%"></h1>
