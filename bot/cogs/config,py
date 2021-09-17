@@ -1,0 +1,56 @@
+import discord
+from discord.ext import commands
+
+from tools import embedbuilder as e
+from psutil import Process, cpu_percent
+from os import getpid
+import json
+
+
+class Config(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def info(self, ctx):
+        msg = f"""**Bot version:** `{self.bot.__version__}`
+**Database Version:** `{self.bot.db.__version__}`
+**Enhanced-Dpy version:** `{discord.__version__}`
+**Server Count:** `{len(self.bot.guilds)}`
+**Memory Used:** `{round(Process(getpid()).memory_info().rss/1204/1204/1204, 3)}GB Used ({round(Process(getpid()).memory_percent())}%)`
+**CPU Usage:** `{cpu_percent()}%`
+**Creators:** `Andeh#2709`, `Erase#0027`
+"""
+
+        embed = e.EmbedBuilder(self.bot).build_embed(
+            title="Bot information",
+            description=msg,
+            thumb=self.bot.user.avatar_url_as(static_format="png"),
+            timestamp=True
+        )
+
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def prefix(self, ctx, new_prefix=None):
+        with open("././data/prefixes/prefixes.json", "r") as f:
+            data = json.load(f)
+        prefix = data[str(ctx.guild.id)]
+        if new_prefix is None:
+            embed = e.EmbedBuilder(
+                self.bot).build_embed(
+                title=f"The prefix for `{ctx.guild.name}` is `{prefix}`")
+            await ctx.message.reply(embed=embed)
+            return
+        data[str(ctx.guild.id)] = new_prefix
+        with open("././data/prefixes/prefixes.json", "w") as f:
+            json.dump(data, f, indent=4)
+        embed = e.EmbedBuilder(
+            self.bot).build_embed(
+            title=f"The prefix for `{ctx.guild.name}` has been changed from `{prefix}` to `{new_prefix}`")
+        await ctx.message.reply(embed=embed)
+
+
+def setup(bot):
+    bot.add_cog(Config(bot))
