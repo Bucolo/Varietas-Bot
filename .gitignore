@@ -1,5 +1,4 @@
 #Custom files we don't want pushing to the repo:
-botconfig.py
 Lavalink.jar
 
 # Byte-compiled / optimized / DLL files
