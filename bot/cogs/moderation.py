@@ -18,7 +18,7 @@ class Moderation(commands.Cog):
             return
         # Checks to see if the author is trying to ban themselves, if they are
         # then dont ban them
-        if await self_check(self, ctx, ctx.author, member) is False:
+        if await self_check(ctx.author, member) is False:
             return
         # Cleans up the reason if left blank
         reason = "Unspecified" if reason is None else reason
@@ -134,7 +134,7 @@ class Moderation(commands.Cog):
             await ctx.message.reply(embed=embed, delete_after=10)
             await ctx.message.delete()
             return
-        amount = 100 if amount > 100 else amount
+        amount = 100 if int(amount) > 100 else amount
         deleted = await ctx.channel.purge(limit=amount, check=lambda m: m.author == m.author.bot or m.content.startswith('.' or '/' or '-' or '!' or '?' or '+' or ',' or '=' or '$' or '%' or '£'))
         embed = e.EmbedBuilder(
             self.bot).build_embed(

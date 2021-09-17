@@ -15,12 +15,14 @@ import math
 from tools.embedbuilder import EmbedBuilder
 import json
 loop = asyncio.get_event_loop()
+from database.prefix import PrefixDB
 
 
-def get_prefix(client, message):
-    with open("data/prefixes/prefixes.json") as f:
-        prefixes = json.load(f)
-    return prefixes[str(message.guild.id)]
+async def get_prefix(bot, message):
+    con = PrefixDB(bot.db)
+    result = await con.get(message.guild.id)
+    prefix = commands.when_mentioned_or(result.get("prefix"))(bot, message)
+    return prefix
 
 
 class Varietas(commands.Bot):
@@ -51,9 +53,6 @@ class Varietas(commands.Bot):
 
         return (_[0] + _[1] + _[2]) / 3
 
-    with open("tools/EmojiMan/data/config.py", encoding="utf-8") as f:
-        config = eval(f.read(), {})
-
 
 bot = Varietas()
 
@@ -78,13 +77,13 @@ bot.formatdate = formatdate
 async def on_ready():
     exts = [
         "jishaku",
-        "cogs.music",
         "cogs.sql",
         "cogs.config",
         "cogs.moderation",
         "cogs.tickets",
         "cogs.events",
-        "cogs.automod"]
+        "cogs.automod",
+        "cogs.testserver"]
 
     for e in exts:
         bot.load_extension(e)

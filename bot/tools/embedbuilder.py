@@ -6,7 +6,7 @@ class EmbedBuilder:
         self.embed = discord.Embed()
         self.bot = bot
 
-    def build_embed(self, title="", description="", colour=discord.Colour.material_green(), thumb="", image="", timestamp=False, url=""):
+    def build_embed(self, title="", description="", colour=discord.Colour.green(), thumb="", image="", timestamp=False, url=""):
         self.embed.title = title
         self.embed.description = description
         self.embed.colour=colour

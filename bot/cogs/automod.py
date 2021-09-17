@@ -10,7 +10,6 @@ class AutoMod(commands.Cog):
 
     @commands.group(invoke_without_context=True)
     async def blacklist(self, ctx):
-        #Just here to create the group
         pass
 
     @blacklist.command(name="add")

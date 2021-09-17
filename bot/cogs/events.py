@@ -7,6 +7,7 @@ import json
 from database.ticket import TicketDB
 from tools.embedbuilder import EmbedBuilder
 from database.automod import AutoModDB
+from database.prefix import PrefixDB
 
 
 class Events(commands.Cog):
@@ -83,27 +84,23 @@ class Events(commands.Cog):
                 await message.channel.send(f"{message.author.mention} That isn't allowed here!")
 
         if (message.channel.id == 887815737052377128) and (message.embeds):
-                for embed in message.embeds:
-                    embed.colour = discord.Colour.green()
-                    await message.channel.send(embed=embed)
-                    await message.delete()
+            if message.author.id == 883464643304116255:
+                return
+            for embed in message.embeds:
+                embed.colour = discord.Colour.green()
+                await message.channel.send(embed=embed)
+                await message.delete()
                     
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        with open("././data/prefixes/prefixes.json", "r") as f:
-            prefixes = json.load(f)
-        prefixes[str(guild.id)] = "v!"
-        with open("././data/prefixes/prefixes.json", "w") as f:
-            json.dump(prefixes, f, indent=4)
+        con = PrefixDB(self.bot.db)
+        
+        await con.add(guild.id, "v!")
             
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        with open("././data/prefixes/prefixes.json", "r") as f:
-            data = json.load(f)
-        if str(guild.id) in data:
-            del data[str(guild.id)]
-        with open("././data/prefixes/prefixes.json", "w") as f:
-            data = json.dump(data, f, indent=4)
+        con = PrefixDB(self.bot.db)
+        await con.remove(guild.id)
 
 
 def setup(bot):
