@@ -89,7 +89,6 @@ async def on_ready():
     for e in exts:
         bot.load_extension(e)
     print("Bot is now online")
-    return
 
 
 @bot.command()
