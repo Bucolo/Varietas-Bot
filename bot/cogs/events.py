@@ -82,14 +82,6 @@ class Events(commands.Cog):
             if y["word"] in msg and message.author.id != self.bot.user.id:
                 await message.delete()
                 await message.channel.send(f"{message.author.mention} That isn't allowed here!")
-
-        if (message.channel.id == 887815737052377128) and (message.embeds):
-            if message.author.id == 883464643304116255:
-                return
-            for embed in message.embeds:
-                embed.colour = discord.Colour.green()
-                await message.channel.send(embed=embed)
-                await message.delete()
                     
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
