@@ -7,7 +7,6 @@ import requests
 from bs4 import BeautifulSoup
 from discord.ext import commands
 
-######
 FONT = {'q': '𝗾', 'w': '𝘄', 'e': '𝗲', 'r': '𝗿', 't': '𝘁', 'y': '𝘆', 'u': '𝘂', 'i': '𝗶', 'o': '𝗼', 'p': '𝗽',
         'a': '𝗮', 's': '𝘀', 'd': '𝗱', 'f': '𝗳',
         'g': '𝗴', 'h': '𝗵', 'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'z': '𝘇', 'x': '𝘅', 'c': '𝗰', 'v': '𝘃', 'b': '𝗯',
@@ -129,6 +128,23 @@ class WebScraping(commands.Cog):
         joke = allJokes[random.randint(1, 7)].text[3:]
         joke = joke.replace('?', '?\n')
         await ctx.send(embed=discord.Embed(description=joke, color=discord.Color.random()))
+
+    @commands.command()
+    async def qr(self, ctx, *, data):
+        if ' ' in data:
+            data = '%20'.join(data.split())
+        embed = discord.Embed(title='The biggus Quick Response code', color=0xc349d6)
+        embed.set_image(url='https://chart.apis.google.com/chart?cht=qr&chs=200x200&chld=L|0&chl=' + data)
+        await ctx.send(embed=embed)
+
+    @qr.error
+    async def qrError(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            data = 'https://www.youtube.com/watch?v=SwBEZhb4NVA'
+            embed = discord.Embed(title="You're meant to include ASCII", color=0xff0000)
+            embed.set_image(url='http://chart.apis.google.com/chart?cht=qr&chs=200x200&chld=L|0&chl=' + data)
+            embed.set_footer(text=f"Include some text next time.\nEG: [.qr bruh moment]")
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def animal(self, ctx):
