@@ -7,3 +7,4 @@ Varietas Bot
 .. image:: https://img.shields.io/discord/872313085455650846?label=Varietas%20Developer%20Server   
     :alt: Varietas Dev server invite
 
+Readme will be updated and completed in the near future
