@@ -194,7 +194,7 @@ class WebScraping(commands.Cog):
                 discord.Embed(color=discord.Color.random()).set_author(name="Here is your Image",
                                                                        icon_url=ctx.author.avatar.url).set_image(
                     url=img_url).set_footer(text=f"search query: {query}"))
-        await ctx.reply(embed=embeds[0], view=Paginator(embeds))
+        await Paginator(embeds, ctx, reply=True).start()
 
     @image.error
     async def imageError(self, ctx, error):

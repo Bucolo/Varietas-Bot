@@ -51,13 +51,27 @@ async def badArg(ctx, error, desc):
         await ctx.send(embed=msg)
 
 class Paginator(discord.ui.View):
-    """Circular paginator"""
-    def __init__(self, embeds: [discord.Embed]):
-        super().__init__(timeout=60)
+    """circular paginator"""
+    def __init__(self, embeds: [discord.Embed], ctx: commands.Context, time_out=60, reply=False):
+        super().__init__(timeout=time_out)
         self.embeds = embeds
         self.size = len(embeds)
         self.index = 0
         self.pages.label = f"{self.index+1}/{self.size}"
+        self.ctx = ctx
+        self.message = None
+        self.reply = reply
+
+    async def on_timeout(self) -> None:
+        self.previous.disabled = True
+        self.next.disabled = True
+        await self.message.edit(view=self)
+
+    async def start(self) -> None:
+        if self.reply:
+            self.message = await self.ctx.reply(embed=self.embeds[self.index], view=self)
+        else:
+            self.message = await self.ctx.send(embed=self.embeds[self.index], view=self)
 
     def increment_index(self):
         self.index = (self.index + 1) % self.size
