@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from Organiser import badArg, Paginator
 
-#  this is a test to see whether PRs work
+#  this is a test to see whether PRs work.
 
 greetings = ['yo', 'im the biggus bot', 'My aim is simple; Lemon World Supremacy', "Don't eat spaghetti without sauce",
              "that's kinda sussy", "I'm absorbing my citric acid to gain unlimited powers",
