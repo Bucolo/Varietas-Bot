@@ -8,7 +8,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from discord.ext import commands
-from Organiser import badArg, Paginator
+from bot.tools.Organiser import badArg, Paginator
 
 font = {'q': '𝗾', 'w': '𝘄', 'e': '𝗲', 'r': '𝗿', 't': '𝘁', 'y': '𝘆', 'u': '𝘂', 'i': '𝗶', 'o': '𝗼', 'p': '𝗽',
         'a': '𝗮', 's': '𝘀', 'd': '𝗱', 'f': '𝗳',
