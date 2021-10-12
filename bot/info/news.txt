@@ -1,0 +1,18 @@
+```diff
+! News !
+
+! New Functionalities !
++ = Ticket Setup =
+-   Description: Create your very own customisable ticket panels!
+***   Usage: v!ticket setup
+
++ = Added slash commands =
+***   Note: might take a bit for new commands to regiser
+
+! Bug Fixes !
++ = Fixed bugs with time-based commands =
+
+! Upcoming Features !
+= Logging features =
+-   Server, Member, Channel etc. Logs
+```

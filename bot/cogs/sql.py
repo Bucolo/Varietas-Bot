@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 import datetime
 
+from tools.customchecks import *
+
 """
 CREDITS:
 R. Danny
@@ -31,7 +33,7 @@ class SQL(commands.Cog):
         return content.strip('` \n')
 
     @commands.group(hidden=True, invoke_without_command=True)
-    @commands.is_owner()
+    @Check.botadmin()
     async def sql(self, ctx, *, query: str):
         """Run some SQL."""
 
@@ -70,8 +72,8 @@ class SQL(commands.Cog):
         else:
             await ctx.send(fmt)
 
-    @sql.command(hidden=True, aliases=["at"])
-    @commands.is_owner()
+    @sql.command(slash_command=True, hidden=True, aliases=["at"])
+    @Check.botadmin()
     async def all_tables(self, ctx):
         import time
         import traceback

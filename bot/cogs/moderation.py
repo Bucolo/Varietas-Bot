@@ -3,15 +3,64 @@ from discord.ext import commands
 import datetime
 from tools import embedbuilder as e, timeInterval
 from database import cases
+from tools.customchecks import *
 
+from collections import defaultdict
+
+
+class ActionReason(commands.Converter):
+    async def convert(self, ctx, argument):
+        ret = f'{ctx.author} (ID: {ctx.author.id}): {argument}'
+        if len(ret) > 512:
+            reason_max = 512 - len(ret) + len(argument)
+            raise commands.BadArgument(f'Reason is too long ({len(argument)}/{reason_max})')
+        return ret
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
+        self._databatch = defaultdict(list)
+    
+    #async def cog_command_error(self, ctx, error):
+    #    if isinstance(error, commands.CommandInvokeError):
+    #        embed = discord.Embed(
+    #            title="An Unexpected Error Occurred!",
+    #            description=f"""
+    #            ```cmd
+    #            {error.original}
+    #            ```
+    #            """,
+    #            colour=0xef534e
+    #        )
+    #        await ctx.send(embed=embed)
+    #    elif isinstance(error, commands.CommandOnCooldown):
+    #        embed = discord.Embed(
+    #            title="An Unexpected Error Occurred!",
+    #            description=f"""
+    #            ```cmd
+    #            retry after: {error.retry_after} seconds
+    #            ```
+    #            """,
+    #            colour=0xef534e
+    #        )
+    #        await ctx.send(embed=embed)
+    #    else:
+    #        embed = discord.Embed(
+    #            title="An Unexpected Error Occurred!",
+    #            description=f"""
+    #            ```cmd
+    #            {error.message}
+    #            ```
+    #            """,
+    #            colour=0xef534e
+    #        )
+    #        await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(slash_command=True, description="ban a user")
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason=None):
+        """Ban a user"""
         # Checks to see if the member being banned's top role is higher than
         # the authors role, if it is then dont ban them
         if await role_check(self, ctx, ctx.author, member) is False:
@@ -37,9 +86,10 @@ class Moderation(commands.Cog):
         await ctx.message.reply(embed=await conf_embed(self, member, "banned", reason), delete_after=15)
         await ctx.message.delete()
 
-    @commands.command()
+    @commands.command(slash_command=True, description="kick a user")
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
+        """Kick a user"""
         if await role_check(self, ctx, ctx.author, member) is False:
             return
         if await self_check(self, ctx, ctx.author, member) is False:
@@ -60,9 +110,10 @@ class Moderation(commands.Cog):
         await ctx.message.reply(embed=await conf_embed(self, member, "kicked", reason), delete_after=15)
         await ctx.message.delete()
 
-    @commands.command()
+    @commands.command(slash_command=True, description="unban a user")
     @commands.has_permissions(ban_members=True)
     async def unban(self, ctx, member: discord.User, *, reason=None):
+        """Unban a user"""
         reason = "Unspecified" if reason is None else reason
         await ctx.guild.unban(discord.Object(id=int(member.id)), reason=reason)
         embed = e.EmbedBuilder(self.bot).build_embed(
@@ -83,9 +134,10 @@ class Moderation(commands.Cog):
         except BaseException:
             return
 
-    @commands.group(aliases=['clear'], invoke_without_command=True)
+    @commands.group(aliases=['clear'], invoke_without_command=True, description="purge messages")
     @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx, amount: int = None):
+        """Purge messages"""
         amount = 100 if amount > 100 else amount
         if amount is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
@@ -95,14 +147,15 @@ class Moderation(commands.Cog):
             await ctx.message.delete()
             return
         await ctx.message.delete()
-        deleted = await ctx.channel.purge(limit=int(amount))
+        deleted = await ctx.channel.purge(limit=amount, check=lambda m: m.author.bot)
         embed = e.EmbedBuilder(self.bot).build_embed(
             title=f"Purged {len(deleted)} messages in {ctx.channel.name}!")
         await ctx.send(embed=embed, delete_after=15)
 
-    @purge.command()
+    @purge.command(slash_command=True, description="purge messages from a member")
     @commands.has_permissions(manage_messages=True)
     async def member(self, ctx, member: discord.Member = None, amount: int = None):
+        """Purge messages sent by a given member"""
         if member is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
                 title="Please provide a member to purge their messages!",
@@ -124,9 +177,10 @@ class Moderation(commands.Cog):
             title=f"Cleared {len(deleted)} messages in {ctx.channel.name} from {member}")
         await ctx.send(embed=embed, delete_after=15)
 
-    @purge.command()
+    @purge.command(slash_command=True, description="purge bot messages")
     @commands.has_permissions(manage_messages=True)
-    async def bot(self, ctx, amount=None):
+    async def bot(self, ctx, amount: int = None):
+        """Purge messages sent by bots"""
         if amount is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
                 title="Please provide an amount of bot messages to purge!",
@@ -134,25 +188,27 @@ class Moderation(commands.Cog):
             await ctx.message.reply(embed=embed, delete_after=10)
             await ctx.message.delete()
             return
-        amount = 100 if int(amount) > 100 else amount
+        amount = 100 if amount > 100 else amount
         deleted = await ctx.channel.purge(limit=amount, check=lambda m: m.author == m.author.bot or m.content.startswith('.' or '/' or '-' or '!' or '?' or '+' or ',' or '=' or '$' or '%' or '£'))
         embed = e.EmbedBuilder(
             self.bot).build_embed(
             title=f"Cleared {len(deleted)} bot/command messages {ctx.channel.name}")
         await ctx.send(embed=embed, delete_after=15)
 
-    @purge.command()
+    @purge.command(slash_command=True, description="purge maximum amount of messages (100)")
     @commands.has_permissions(manage_messages=True)
     async def max(self, ctx):
+        """Purge maximum amount of messages (100)"""
         await ctx.message.delete()
         await ctx.channel.purge(limit=100)
         embed = e.EmbedBuilder(self.bot).build_embed(
             title=f"Cleared 100 messages in {ctx.channel.name}")
         await ctx.send(embed=embed, delete_after=15)
 
-    @purge.command()
+    @purge.command(slash_command=True, description="purge after a message")
     @commands.has_permissions(manage_messages=True)
     async def after(self, ctx, msg_id=None):
+        """Delete messages after a given message id"""
         messageDelFrom = await ctx.channel.fetch_message(msg_id)
         await ctx.channel.purge(after=messageDelFrom)
         msg_url = messageDelFrom.jump_url
@@ -161,10 +217,11 @@ class Moderation(commands.Cog):
             description=f"[Jump to Message]({msg_url})")
         await ctx.send(embed=embed, delete_after=15)
 
-    @purge.command()
+    @purge.command(slash_command=True, description="purge before a message")
     @commands.has_permissions(manage_messages=True)
-    async def before(self, ctx, msg_id=None):
-        messageDelTo = await ctx.chanel.fetch_message(msg_id)
+    async def before(self, ctx, message_id=None):
+        """Purge messages before a given message"""
+        messageDelTo = await ctx.chanel.fetch_message(message_id)
         await ctx.channel.purge(before=messageDelTo)
         msg_url = messageDelTo.jump_url
         embed = e.EmbedBuilder(self.bot).build_embed(
@@ -172,9 +229,15 @@ class Moderation(commands.Cog):
             description=f"[Jump to Message]({msg_url})")
         await ctx.send(embed=embed, delete_after=15)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, description="command group for slowmode")
     @commands.has_permissions(manage_messages=True)
-    async def slowmode(self, ctx, channel: discord.TextChannel = None, time=None):
+    async def slowmode(self, ctx):
+        pass
+    
+    @slowmode.command(slash_command=True, description="enable slowmode in a channel")
+    @commands.has_permissions(manage_messages=True)
+    async def on(self, ctx, channel: discord.TextChannel = None, time=None):
+        """Enable slowmode in a channel."""
         if time is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
                 title="Please enter a time for slow mode to run at",
@@ -205,9 +268,10 @@ class Moderation(commands.Cog):
             await ctx.message.reply(embed=embed, delete_after=15)
             await ctx.message.delete()
 
-    @slowmode.command()
+    @slowmode.command(slash_command=True, description="disable slowmode in a channel")
     @commands.has_permissions(manage_channels=True)
     async def off(self, ctx, channel: discord.TextChannel = None):
+        """Disable slowmode in a channel"""
         channel = ctx.channel if channel is None else channel
         await channel.edit(slowmode_delay=0)
         embed = e.EmbedBuilder(self.bot).build_embed(
@@ -215,10 +279,14 @@ class Moderation(commands.Cog):
         await ctx.message.reply(embed=embed, delete_after=15)
         await ctx.message.delete()
 
-    @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @commands.command(slash_command=True, description="Temporarily mute a user.")
+    #@Check.canmute()
     async def tempmute(self, ctx, member: discord.Member, duration, *, reason=None):
-        reason = "Unspecified" if reason is None else reason
+        """Temporarily mute a user."""
+        if reason is None:
+            reason = 'Unspecified'
+        muted = ctx.guild.get_role(await get_muted_role(self, ctx.guild.id))
+        await member.add_roles(muted)
         interval = timeInterval.time_interval(duration)
         current_time = datetime.datetime.utcnow()
         if interval is not None:
@@ -226,50 +294,49 @@ class Moderation(commands.Cog):
                 duration = (interval[0].replace("w", ""))
                 time_added = datetime.timedelta(weeks=int(duration))
                 expirationDate = current_time + time_added
-                finalExpirationDate = self.bot.formatdate(expirationDate)
+                expirationDate = expirationDate
                 timestr = "week" if duration == "1" else "weeks"
             if interval[1] == "d":
                 duration = (interval[0].replace("d", ""))
                 time_added = datetime.timedelta(days=int(duration))
                 expirationDate = current_time + time_added
-                finalExpirationDate = self.bot.formatdate(expirationDate)
+                expirationDate = expirationDate
                 timestr = "day" if duration == "1" else "days"
             if interval[1] == "h":
                 duration = (interval[0].replace("h", ""))
                 time_added = datetime.timedelta(hours=int(duration))
                 expirationDate = current_time + time_added
-                finalExpirationDate = self.bot.formatdate(expirationDate)
+                expirationDate = expirationDate
                 timestr = "hour" if duration == "1" else "hours"
             if interval[1] == "m":
                 duration = (interval[0].replace("m", ""))
                 time_added = datetime.timedelta(minutes=int(duration))
                 expirationDate = current_time + time_added
-                finalExpirationDate = self.bot.formatdate(expirationDate)
+                expirationDate = expirationDate
                 timestr = "minute" if duration == "1" else "minutes"
             if interval[1] == "s":
                 duration = (interval[0].replace("s", ""))
                 time_added = datetime.timedelta(seconds=int(duration))
                 expirationDate = current_time + time_added
-                finalExpirationDate = self.bot.formatdate(expirationDate)
+                expirationDate = expirationDate
                 timestr = "second" if duration == "1" else "seconds"
         else:
-            finalExpirationDate = "Never"
-        confirmEmbed = discord.Embed(description=f"**Duration:** {duration} {timestr}\n**Reason:** {reason}",
-                                    colour=discord.Colour.red())
-        confirmEmbed.set_author(name=f"{member} has been muted")
-        mutedRoleID = await get_muted_role(self, ctx.guild, ctx)
-        mutedRole = ctx.guild.get_role(mutedRoleID)
-        await cases.CasesDB(self.bot.db).case_add("Mute", ctx.guild.id, member.id, reason, finalExpirationDate)
-        await member.add_roles(mutedRole)
-        await ctx.message.reply(embed=confirmEmbed)
+            expirationDate = "Never"
+        await cases.CasesDB(self.bot.db).case_add("Mute", ctx.guild.id, member.id, reason, str(expirationDate))
+        embed = e.EmbedBuilder(self.bot).build_embed(
+            title=f"{member} has been muted",
+            description=f"**Duration:** {duration} {timestr}\n**Reason:** {reason}")
+        embed.set_footer(text=f"Muted at {self.bot.formatdate()}")
+        await ctx.message.reply(embed=embed)
         await ctx.message.delete()
-
+        
+        
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
 
-async def get_muted_role(self, guild, ctx):
-    muted_id = await cases.CasesDB(self.bot.db).get_muted_role(guild.id)
+async def get_muted_role(self, guild):
+    muted_id = await cases.CasesDB(self.bot.db).get_muted_role(guild)
     try:
         muted_id = int(muted_id)
         return muted_id
@@ -277,7 +344,7 @@ async def get_muted_role(self, guild, ctx):
         embed = e.EmbedBuilder(self.bot).build_embed(
             description="Oops! You don't seem to have a muted role on my database, to set one up, either run the `setup muted <role_id>` or `setup muted create`.",
             colour=discord.Colour.red())
-        await ctx.message.reply(embed=embed)
+        return embed
 
 async def role_check(self, ctx, moderator, member):
     if moderator.top_role > member.top_role:
