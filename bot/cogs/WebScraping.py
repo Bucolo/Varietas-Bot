@@ -10,14 +10,6 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from Organiser import badArg, Paginator
 
-#  this is a test to see whether PRs work.
-
-greetings = ['yo', 'im the biggus bot', 'My aim is simple; Lemon World Supremacy', "Don't eat spaghetti without sauce",
-             "that's kinda sussy", "I'm absorbing my citric acid to gain unlimited powers",
-             "Jeff Bezos is an intergalactic space probe in the form of a human.",
-             "What do you call a man with no knees?\nKneel!",
-             "Epic rofl moment"]
-
 font = {'q': '𝗾', 'w': '𝘄', 'e': '𝗲', 'r': '𝗿', 't': '𝘁', 'y': '𝘆', 'u': '𝘂', 'i': '𝗶', 'o': '𝗼', 'p': '𝗽',
         'a': '𝗮', 's': '𝘀', 'd': '𝗱', 'f': '𝗳',
         'g': '𝗴', 'h': '𝗵', 'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'z': '𝘇', 'x': '𝘅', 'c': '𝗰', 'v': '𝘃', 'b': '𝗯',
@@ -102,38 +94,6 @@ def arrowButton(index, length, disabled1=False, disabled2=False):
     view.add_item(Button(style=ButtonStyle.grey, label=f"{index}/{length}", disabled=True))
     view.add_item(Button(style=ButtonStyle.green, label='➡'))
     return view
-
-
-def oldChatBotReply(message):
-    url = "https://robomatic-ai.p.rapidapi.com/api.php"
-    payload = f"key=RHMN5hnQ4wTYZBGCF3dfxzypt68rVP&cbid=1&ChatSource=RapidAPI&SessionID=RapidAPI1&cbot=1&op=in&in={message}"
-    headersRoboMatic = {
-        'content-type': "application/x-www-form-urlencoded",
-        'x-rapidapi-host': "robomatic-ai.p.rapidapi.com",
-        'x-rapidapi-key': "c97af16bb5msh4a9c4bd102924e7p13f694jsna81d3f25137a"
-    }
-    response = requests.request("POST", url, data=payload, headers=headersRoboMatic)
-    try:
-        print(response.text, "\nRoboMatic")
-        return json.loads(response.text).get('out')
-    except json.decoder.JSONDecodeError:
-        return random.choice(greetings)
-
-
-def chatBotReply(message):
-    message = message.replace("lemony", 'aco')
-    if random.randint(1, 5) == 4:
-        return random.choice(greetings)
-    url = "https://acobot-brainshop-ai-v1.p.rapidapi.com/get"
-    querystring = {"bid": "178", "key": "sX5A2PcYZbsN5EY6", "uid": "mashape", "msg": f"{message}"}
-    headersBrainShop = {
-        'x-rapidapi-host': "acobot-brainshop-ai-v1.p.rapidapi.com",
-        'x-rapidapi-key': "c97af16bb5msh4a9c4bd102924e7p13f694jsna81d3f25137a"
-    }
-    response = requests.request("GET", url, headers=headersBrainShop, params=querystring)
-    print(response.text, "\nBrainShop")
-    output = json.loads(response.text)['cnt']
-    return output if output is not None else oldChatBotReply(message)
 
 
 class WebScraping(commands.Cog):
