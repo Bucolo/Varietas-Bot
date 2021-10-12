@@ -6,10 +6,10 @@ class EmbedBuilder:
         self.embed = discord.Embed()
         self.bot = bot
 
-    def build_embed(self, title="", description="", colour=discord.Colour.green(), thumb="", image="", timestamp=False, url=""):
+    def build_embed(self, title="", description="", colour=0x66bb6a, thumb="", image="", timestamp=False, url=""):
         self.embed.title = title
         self.embed.description = description
-        self.embed.colour=colour
+        self.embed.colour = colour
 
         self.embed.set_thumbnail(url=thumb) if thumb != "" else None
         self.embed.set_image(url=image) if image != "" else None
@@ -19,7 +19,7 @@ class EmbedBuilder:
 
         self.embed.set_footer(
             text=(f"Join the support server! discord.gg/varietas"),
-            icon_url=self.bot.user.avatar_url_as(static_format="png")
+            icon_url=str(self.bot.user.avatar)
         )
 
         return self.embed
