@@ -91,7 +91,7 @@ async def on_ready():
 
 @bot.event
 async def on_command_error(ctx, error):
-    # NEEDS TO HAVE THIS FOR THE CUSTOM DECORATOR TO WORK
+    #  NEEDS TO HAVE THIS FOR THE CUSTOM DECORATOR TO WORK
     if isinstance(error, commands.errors.CheckFailure):
         pass
     elif isinstance(error, commands.CommandOnCooldown):

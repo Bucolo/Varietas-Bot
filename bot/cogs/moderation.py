@@ -4,7 +4,7 @@ import datetime
 from tools import embedbuilder as e, timeInterval
 from database import cases
 from bot.tools import mod, admin
-
+# using mod/admin decorators
 
 class Moderation(commands.Cog):
     def __init__(self, bot):

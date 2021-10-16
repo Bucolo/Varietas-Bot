@@ -9,7 +9,7 @@ green = 0x00ff00
 #     if isinstance(error, commands.errors.CheckFailure):
 #         pass
 
-# Do this in the `async def on_command_error(ctx, error):` event
+# Do this in the ``async def on_command_error(ctx, error):`` event
 
 def admin():
     """decorator for permissions, so that only admins can access the command"""
@@ -97,6 +97,8 @@ class Paginator(discord.ui.View):
         await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
 
 class AddButton(discord.ui.View):
+    """Useful for adding buttons to a message, and have a callback for it, without having to build it every time.
+    Also can use linked buttons."""
     def __init__(self, message: discord.Message, timeout=None, timeout_coroutine=None):
         super().__init__(timeout=timeout)
         self.message = message

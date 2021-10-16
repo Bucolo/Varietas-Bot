@@ -24,13 +24,11 @@ headers2 = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 7_0 like Mac OS X)
 
 reactions = '⬅️ ➡️'.split()
 
-
 def convertSoup(link, user_agent=None):
     if user_agent is not None:
         return BeautifulSoup(requests.get(link, headers=user_agent, timeout=5).content, 'html.parser')
     page = requests.get(link, timeout=5)
     return BeautifulSoup(page.content, 'html.parser')
-
 
 def add_sub(react):
     react = str(react)
@@ -40,7 +38,6 @@ def add_sub(react):
         return 1
     else:
         return 0
-
 
 def accuracy(sentence, userInput):
     words = sentence.split()
@@ -58,7 +55,6 @@ def accuracy(sentence, userInput):
             break
     return round(correct / len(sentence) * 100, 2)
 
-
 def convertFont(string):
     new = ''
     for char in string:
@@ -69,7 +65,6 @@ def convertFont(string):
         else:
             new += char
     return new
-
 
 def arrowButton(index, length, disabled1=False, disabled2=False):
     view = View()
@@ -94,7 +89,6 @@ def arrowButton(index, length, disabled1=False, disabled2=False):
     view.add_item(Button(style=ButtonStyle.grey, label=f"{index}/{length}", disabled=True))
     view.add_item(Button(style=ButtonStyle.green, label='➡'))
     return view
-
 
 class WebScraping(commands.Cog):
     def __init__(self, bot):
@@ -233,7 +227,6 @@ class WebScraping(commands.Cog):
             embed.set_footer(text=desc)
             embed.set_image(url=image)
         await ctx.send(embed=embed)
-
 
 def setup(bot):
     bot.add_cog(WebScraping(bot))

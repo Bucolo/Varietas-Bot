@@ -114,7 +114,7 @@ async def getRoleAndOther(ctx, bot, splitter='|', test_emoji=False) -> (list, bo
 class Management(commands.Cog):
     """Managed to find a method to add button and dropdown menu roles without the hassle of storing all the data in a db
     or a local file. the role ID is stored in the component (button/select option) itself, so then the person clicks it,
-    it can be retrieved. very neat stuff :()"""
+    it can be retrieved. Very neat stuff :()"""
     def __init__(self, bot):
         self.bot = bot  # type: commands.Bot
 
