@@ -18,7 +18,7 @@ class PrefixDB:
         await conn.execute("UPDATE prefix SET prefix=$1 WHERE guild=$2", prefix, guild)
         await conn.close()
     
-    async def delete(self, guild):
+    async def remove(self, guild):
         conn = await self.dbConnection.get_connection()
         await conn.execute("DELETE FROM prefix WHERE guild=$1", guild)
         await conn.close()

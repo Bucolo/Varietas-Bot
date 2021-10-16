@@ -2,83 +2,83 @@ import discord
 
 from discord.ext import commands
 
-from discord_components import *
-from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption
 from database import ticket
 
-from tools import embedbuilder
+from tools import embedbuilder, components
 
 import asyncio
 
 
-class Tickets(commands.Cog):
+class Tickets2(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-        self.ic = InteractionClient(bot)
         self.e = embedbuilder.EmbedBuilder(self.bot)
 
-    # async def cog_command_error(self, ctx, error):
-    #     if isinstance(error, commands.errors.CommandInvokeError) and "Invalid Form Body" in str(error.original):
-    #         embed = self.e.build_embed(
-    #             title="Command Error",
-    #             description="This category doesn't have any text channels available. Please re-use the command",
-    #             timestamp=True
-    #         )
-    #         await ctx.send(embed=embed, delete_after=20.0)
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandInvokeError):
+            embed = discord.Embed(
+                title="An Unexpected Error Occurred!",
+                description=f"""
+                ```cmd
+                {error.original}
+                ```
+                """,
+                colour=0xef534e
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                title="An Unexpected Error Occurred!",
+                description=f"""
+                ```cmd
+                retry after: {error.retry_after} seconds
+                ```
+                """,
+                colour=0xef534e
+            )
+            await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title="An Unexpected Error Occurred!",
+                description=f"""
+                ```cmd
+                {error.message}
+                ```
+                """,
+                colour=0xef534e
+            )
+            await ctx.send(embed=embed)
 
-    #     elif isinstance(error, commands.CommandOnCooldown):
-    #         embed = self.e.build_embed(
-    #             title="Command Error",
-    #             description=f"{error.message} seconds",
-    #             timestamp=True
-    #         )
-    #         await ctx.send(embed=embed, delete_after=20.0)
-
-    #     elif isinstance(error, asyncio.TimeoutError):
-    #         embed = self.e.build_embed(
-    #             title="Command Error",
-    #             description="You ran out of time. Please re-use the command.",
-    #             timestamp=True
-    #         )
-
-    #         await ctx.send(embed=embed, delete_after=20.0)
-
-    #     else:
-    # return await ctx.send(f"Unknown Error (Please report this using
-    # `v!feedback`):\n{error}")
-
-    @commands.group(name="ticket", invoke_without_command=True)
+    @commands.group(name="ticket", invoke_without_command=True, description="ticket functionalities")
+    @commands.has_permissions(manage_guild=True)
     async def ticket(self, ctx):
         pass
 
-    @ticket.command(
+    @ticket.command(slash_command=True, 
         name="setup",
         aliases=[],
         description="Setup a ticket system in your server"
     )
     @commands.cooldown(1, 30, commands.BucketType.member)
+    @commands.has_permissions(manage_guild=True)
     async def ticket_setup(self, ctx):
+        """Setup a ticket system in your server"""
         title = ""
         desc = ""
         chan_id = 0
         roles = []
         cat_id = 0
 
-        embed = self.e.build_embed(
-            title="Ticket System Setup",
-            description="Please enter the title for the ticket embed",
-        )
-
-        def check(m):
-            return m.author.id != self.bot.user.id and m.author.id == ctx.author.id
-
+#TICKET TITLE
+        embed = self.e.build_embed(title="Ticket System Setup", description="Please enter the title for the ticket embed")
+        check=lambda m: m.author.id == ctx.author.id and m.channel.id == ctx.channel.id
         embed1 = await ctx.channel.send(embed=embed)
         msg = await self.bot.wait_for('message', timeout=180.0, check=check)
         title = msg.content
         await embed1.delete()
         await msg.delete()
 
+#TICKET DESCRIPTION
         embed = self.e.build_embed(
             title="Ticket System Setup",
             description="Please enter the description for the ticket embed"
@@ -89,99 +89,119 @@ class Tickets(commands.Cog):
         await msg.delete()
         await embed2.delete()
 
+#TICKET PANEL CATEGORY
         embed = self.e.build_embed(
             title="Ticket System Setup",
-            description="Category where the channel you would like the ticket embed to be sent is in.")
-
-        msg = await ctx.send(
-            embed=embed,
-            components=[
-                SelectMenu(
-                    custom_id="_cat_id",
-                    placeholder="Category where the channel you want the embed to be sent is in",
-                    options=[
-                        SelectOption(l.name, l.id) for l in ctx.guild.categories
-                    ]
-                )
-            ]
-        )
-
-        def _check(inter):
-            return inter.author == ctx.author
-
-        inter = await msg.wait_for_dropdown(_check)
-
-        cat_id = [option.value for option in inter.select_menu.selected_options]
-
+            description="Category where the channel you would like the ticket panel to be sent is in.") 
+        view = components.TicketSetupPanelCat.DropdownView(ctx)
+        msg = await ctx.send(embed=embed, view=view)
+        await view.wait()
+        cat_id = view.values[0]
         await msg.delete()
+        category = self.bot.get_channel(int(cat_id))
 
-        category = self.bot.get_channel(int(cat_id[0]))
-
+#TICKET PANEL CHANNEL
         embed = self.e.build_embed(
             title="Ticket System Setup",
-            description="Please select the channel where you want the embed to be sent in.")
-
-        msg = await ctx.send(
-            embed=embed,
-            components=[
-                SelectMenu(
-                    custom_id="chan_id",
-                    placeholder="channel where you want the embed to be sent in",
-                    options=[
-                        SelectOption(l.name, l.id) for l in category.text_channels
-                    ]
-                )
-            ]
-        )
-
-        inter = await msg.wait_for_dropdown(_check)
-
-        chan_id = [
-            option.value for option in inter.select_menu.selected_options]
-
+            description="Please select the channel where you want the panel to be sent in.")
+        view = components.TicketSetupPanelChan.DropdownView(category)
+        msg = await ctx.send(embed=embed, view=view)
+        await view.wait()
+        chan_id = view.values[0]
         await msg.delete()
-
+        
+#TICKET CATEGORY
+        embed = self.e.build_embed(
+            title="Ticket System Setup", description="Please select the category where we should create the tickets.")
+        view = components.TicketCategory.DropdownView(ctx)
+        msg = await ctx.channel.send(embed=embed, view=view)
+        await view.wait()
+        category_id = view.values[0]
+        await msg.delete()
+        
+#TICKET ROLES AND MEMBERS
         embed = self.e.build_embed(
             title="Ticket System Setup",
-            description="Please ping the roles that will automatically have access to ticket channels")
+            description="Please ping the roles and/or members that will automatically have access to ticket channels")
         embed4 = await ctx.channel.send(embed=embed)
         msg = await self.bot.wait_for('message', timeout=180.0, check=check)
-        roles_str = msg.content.strip("<@&>")
-        roles = str(msg.content.strip('<@&').split('>'))
+        roles = msg.raw_role_mentions
+        members = msg.raw_mentions
+        roles_str = []
+        for role in roles:
+            if type(role) == int: 
+                role = ctx.guild.get_role(role)
+            roles_str.append(role.mention)
+        for member in members:
+            if type(member) == int:
+                member = ctx.guild.get_member(member)
+            roles_str.append(member.mention)
+        for member in msg.raw_mentions:
+            roles.append(member)
+        roles_str = str(roles_str).replace("[", "").replace("]", "").replace("'", "")
         await embed4.delete()
         await msg.delete()
 
+#TICKET LOGS CATEGORY  
+        logchan = await ticket.TicketDB(self.bot.db).get_log_channel(ctx.guild.id)
+        print(logchan)
+        if logchan is None or logchan == []:
+            view = components.TicketSetupLogCat.DropdownView(ctx)
+            embed = self.e.build_embed(
+                title="Select log category",
+                description="You don't seem to have a ticket log channel set up.\nPlease select the category of the channel where you want me to send ticket logs and transcripts!")
+            msg = await ctx.channel.send(embed=embed, view=view)
+            await view.wait()
+            log_cat_id = view.values[0]
+            log_cat = ctx.guild.get_channel(int(log_cat_id))
+            await msg.delete()
+
+#TICKET LOGS CHANNEL        
+            view = components.TicketSetupLogChan.DropdownView(log_cat)
+            embed = self.e.build_embed(
+                title="Select log channel",
+                description="Please select the channel where you want me to send ticket logs and transcripts!")
+            msg = await ctx.channel.send(embed=embed, view=view)
+            await view.wait()
+            log_chan_id = view.values[0]
+            await msg.delete()
+        else:
+            log_chan_id = logchan[0]["ticket_logs"]
+
+#FINAL CONFIRMATION
+        logchan = self.bot.get_channel(int(log_chan_id))
         embed = self.e.build_embed(
             title="Please confirm your options:",
-            description=f"Title: {title}\nDescription: {desc}\nChannel: {self.bot.get_channel(int(chan_id[0])).mention}\nTicket Category: {self.bot.get_channel(int(cat_id[0])).name}\nRoles: {roles_str}"
-        )
+            description=f"Title: {title}\nDescription: {desc}\nChannel: {self.bot.get_channel(int(chan_id)).mention}\nTicket Category: {self.bot.get_channel(int(cat_id)).name}\nRoles: {roles_str}\nTicket Log Channel: {logchan.mention}")
+        view=components.TicketSetupConfirm()
+        msg = await ctx.send(embed=embed, view=view)
+        await view.wait()
+        if view.value:
+            e = self.e.build_embed(
+                title=title,
+                description=desc,
+                timestamp=True)
+            channel = self.bot.get_channel(int(chan_id))
+            view = components.OpenTicket()
+            await msg.delete()
+            msg = await channel.send(embed=e, view=view)
+            await ctx.message.delete()
 
-        msg = await ctx.send(embed=embed, components=[Button(style=ButtonStyle.green, label="✅"),
-                                                      Button(style=ButtonStyle.red, label="❌")])
-
-        def check(c): return c.author == ctx.author and c.channel == ctx.channel
-        try:
-            interaction = await self.bot.wait_for("button_click", check=check)
-            if interaction.component.label == "✅":
-                e = self.e.build_embed(
-                    title=title,
-                    description=desc,
-                    timestamp=True)
-                channel = self.bot.get_channel(int(chan_id[0]))
-                msg = await channel.send(embed=e)
-                t = ticket.TicketDB(self.bot.db)
-                await t.add(int(cat_id[0]), msg.id, roles)
-
-                await msg.add_reaction("📥")
-                await interaction.respond(content=f"Your ticket has been created in {channel.mention}!")
-            elif interaction.component.label == "❌":
-                await interaction.respond(content="No problem. Re-use the command and enter your desired answers.")
-            else:
-                pass
+#ADDING TO THE DATABASE
+            roles = str(roles)
+            t = ticket.TicketDB(self.bot.db)
+            await t.add(int(ctx.guild.id), int(category_id), int(msg.id), str(roles))
+            await t.add_log_channel(int(log_chan_id), ctx.guild.id)
+            embed = self.e.build_embed(
+                title="Your ticket panel has been created!",
+                description=f"Title: {title}\nDescription: {desc}\nChannel: {self.bot.get_channel(int(chan_id)).mention}\nTicket Category: {self.bot.get_channel(int(cat_id)).name}\nRoles: {roles_str}\nTicket Log Channel: {logchan.mention}")
+            await ctx.send(embed=embed)
             return
-        except asyncio.TimeoutError:
-            return
-
+        else:
+            embed = self.e.build_embed(
+                title="Ticket panel setup cancelled",
+                description=f"To create another, simply run `{ctx.prefix}ticket setup` again.\nTo change the ticket log channel, run `{ctx.prefix}config logs`.")
+            await ctx.send(embed=embed)
 
 def setup(bot):
-    bot.add_cog(Tickets(bot))
+    bot.add_cog(Tickets2(bot))

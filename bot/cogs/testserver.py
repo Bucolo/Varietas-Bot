@@ -3,17 +3,55 @@ from discord.ext import commands
 import asyncio
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption
 
+from tools.customchecks import *
 
 class TestServer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandInvokeError):
+            embed = discord.Embed(
+                title="An Unexpected Error Occurred!",
+                description=f"""
+                ```cmd
+                {error.original}
+                ```
+                """,
+                colour=0xef534e
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                title="An Unexpected Error Occurred!",
+                description=f"""
+                ```cmd
+                retry after: {error.retry_after} seconds
+                ```
+                """,
+                colour=0xef534e
+            )
+            await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title="An Unexpected Error Occurred!",
+                description=f"""
+                ```cmd
+                {error.message}
+                ```
+                """,
+                colour=0xef534e
+            )
+            await ctx.send(embed=embed)
 
     @commands.Cog.listener()
+    @Check.devserver()
     async def on_member_join(self, member):
         role = discord.utils.find(lambda r: r.id == 887769244241125416)
         await member.add_roles(role)
 
-    @commands.command(aliases=['ms'])
+    @commands.command(slash_command=True, aliases=['ms'], hidden=True)
+    @Check.botadmin()
     async def makestaff(self, ctx, member: discord.Member):
         await member.add_roles(ctx.guild.get_role(887770743323131964))
         embed = discord.Embed(
@@ -25,8 +63,8 @@ class TestServer(commands.Cog):
                 url="https://github.com/orgs/VarietasDev/"))
         await ctx.send(embed=embed, components=[row])
 
-    @commands.command(aliases=['mh'])
-    @commands.is_owner()
+    @commands.command(slash_command=True, aliases=['mh'], hidden=True)
+    @Check.botadmin()
     async def makehelper(self, ctx, member: discord.Member):
         await member.add_roles(ctx.guild.get_role(887814647510609950))
         embed = discord.Embed(
@@ -38,8 +76,10 @@ class TestServer(commands.Cog):
                 url="https://github.com/orgs/VarietasDev/"))
         await ctx.send(embed=embed, components=[row])
 
-    @commands.command()
+    @commands.command(slash_command=True, description="add a bot to the developer server")
+    @Check.devserver()
     async def addbot(self, ctx, bot_id, *, reason=None):
+        """Add a bot to the developer server"""
         row = ActionRow(Button(style=ButtonStyle.link, label="Go to Developer Portal", url="https://discord.com/developers/applications"))
         try:
             int(bot_id)
@@ -68,6 +108,7 @@ class TestServer(commands.Cog):
         await ctx.message.delete()
 
     @commands.Cog.listener()
+    @Check.devserver()
     async def on_member_update(self, before, after):
         if (before.guild.id == 872313085455650846) and (before.pending and not after.pending):
             await after.add_roles(after.guild.get_role(887769244241125416))
@@ -75,7 +116,7 @@ class TestServer(commands.Cog):
                 title=f"Welcome to the server, {after.name}",
                 description=f"{after.mention}, make sure to look over our <#887832966649241631> and <#887833852670791690> channels to get a better idea on what the server is about!",
                 colour=discord.Colour.green())
-            embed.set_thumbnail(url=after.avatar_url)
+            embed.set_thumbnail(url=str(after.avatar))
             await self.bot.get_channel(887830918344114176).send(embed=embed)
 
 def setup(bot):
