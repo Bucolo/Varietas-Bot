@@ -3,6 +3,7 @@ from discord.ext import commands
 import datetime
 from tools import embedbuilder as e, timeInterval
 from database import cases
+from bot.tools import mod, admin
 
 
 class Moderation(commands.Cog):
@@ -10,15 +11,15 @@ class Moderation(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, member: discord.Member, *, reason=None):
+    @admin()
+    async def ban(self, ctx: commands.Context, member: discord.Member, *, reason=None):
         # Checks to see if the member being banned's top role is higher than
         # the authors role, if it is then dont ban them
-        if await role_check(self, ctx, ctx.author, member) is False:
+        if await self.role_check(ctx, ctx.author, member) is False:
             return
         # Checks to see if the author is trying to ban themselves, if they are
         # then dont ban them
-        if await self_check(ctx.author, member) is False:
+        if await self.self_check(ctx, ctx.author, member) is False:
             return
         # Cleans up the reason if left blank
         reason = "Unspecified" if reason is None else reason
@@ -28,21 +29,20 @@ class Moderation(commands.Cog):
                         f"**Reason:** {reason}\n"
                         f"**Banned at:** {self.bot.parsedate()}",
             colour=self.bot.red,
-            thumb=ctx.guild.icon_url)
+            thumb=ctx.guild.icon.url)
         try:
             await member.send(embed=embed)
-        except BaseException:
+        except discord.Forbidden:
             pass
-        await ctx.guild.ban(discord.Object(id=int(member.id)), reason=reason)
-        await ctx.message.reply(embed=await conf_embed(self, member, "banned", reason), delete_after=15)
-        await ctx.message.delete()
+        await member.ban(reason=reason)
+        await ctx.message.reply(embed=await self.conf_embed(member, "banned", reason), delete_after=15)
 
     @commands.command()
-    @commands.has_permissions(kick_members=True)
+    @admin()
     async def kick(self, ctx, member: discord.Member, *, reason=None):
-        if await role_check(self, ctx, ctx.author, member) is False:
+        if await self.role_check(ctx, ctx.author, member) is False:
             return
-        if await self_check(self, ctx, ctx.author, member) is False:
+        if await self.self_check(ctx, ctx.author, member) is False:
             return
         reason = "Unspecified" if reason is None else reason
         embed = e.EmbedBuilder(self.bot).build_embed(
@@ -54,10 +54,10 @@ class Moderation(commands.Cog):
             thumb=ctx.guild.icon_url)
         try:
             await member.send(embed=embed)
-        except BaseException:
+        except discord.Forbidden:
             pass
-        await ctx.guild.kick(discord.Object(id=int(member.id)), reason=reason)
-        await ctx.message.reply(embed=await conf_embed(self, member, "kicked", reason), delete_after=15)
+        await member.kick(reason=reason)
+        await ctx.message.reply(embed=await self.conf_embed(member, "kicked", reason), delete_after=15)
         await ctx.message.delete()
 
     @commands.command()
@@ -69,7 +69,7 @@ class Moderation(commands.Cog):
             title=f"{member} has been unbanned!",
             description=f"**Reason:** {reason}\n"
                         f"**Unbanned at {self.bot.parsedate()}",
-            thumb=member.avatar_url)
+            thumb=member.avatar.url)
         await ctx.message.reply(embed=embed, delete_after=15)
         await ctx.message.delete()
         try:
@@ -80,11 +80,11 @@ class Moderation(commands.Cog):
                             f"**Unbanned at {self.bot.parsedate()}",
                             thumb=ctx.guild.icon_url)
             await member.send(embed=embed)
-        except BaseException:
+        except discord.Forbidden:
             return
 
     @commands.group(aliases=['clear'], invoke_without_command=True)
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def purge(self, ctx, amount: int = None):
         amount = 100 if amount > 100 else amount
         if amount is None:
@@ -101,7 +101,7 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed, delete_after=15)
 
     @purge.command()
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def member(self, ctx, member: discord.Member = None, amount: int = None):
         if member is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
@@ -125,7 +125,7 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed, delete_after=15)
 
     @purge.command()
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def bot(self, ctx, amount=None):
         if amount is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
@@ -142,16 +142,15 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed, delete_after=15)
 
     @purge.command()
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def max(self, ctx):
-        await ctx.message.delete()
-        await ctx.channel.purge(limit=100)
+        await ctx.channel.purge(limit=101)
         embed = e.EmbedBuilder(self.bot).build_embed(
             title=f"Cleared 100 messages in {ctx.channel.name}")
         await ctx.send(embed=embed, delete_after=15)
 
     @purge.command()
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def after(self, ctx, msg_id=None):
         messageDelFrom = await ctx.channel.fetch_message(msg_id)
         await ctx.channel.purge(after=messageDelFrom)
@@ -162,7 +161,7 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed, delete_after=15)
 
     @purge.command()
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def before(self, ctx, msg_id=None):
         messageDelTo = await ctx.chanel.fetch_message(msg_id)
         await ctx.channel.purge(before=messageDelTo)
@@ -173,7 +172,7 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed, delete_after=15)
 
     @commands.group(invoke_without_command=True)
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def slowmode(self, ctx, channel: discord.TextChannel = None, time=None):
         if time is None:
             embed = e.EmbedBuilder(self.bot).build_embed(
@@ -206,7 +205,7 @@ class Moderation(commands.Cog):
             await ctx.message.delete()
 
     @slowmode.command()
-    @commands.has_permissions(manage_channels=True)
+    @mod()
     async def off(self, ctx, channel: discord.TextChannel = None):
         channel = ctx.channel if channel is None else channel
         await channel.edit(slowmode_delay=0)
@@ -216,7 +215,7 @@ class Moderation(commands.Cog):
         await ctx.message.delete()
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @mod()
     async def tempmute(self, ctx, member: discord.Member, duration, *, reason=None):
         reason = "Unspecified" if reason is None else reason
         interval = timeInterval.time_interval(duration)
@@ -257,61 +256,59 @@ class Moderation(commands.Cog):
         confirmEmbed = discord.Embed(description=f"**Duration:** {duration} {timestr}\n**Reason:** {reason}",
                                     colour=discord.Colour.red())
         confirmEmbed.set_author(name=f"{member} has been muted")
-        mutedRoleID = await get_muted_role(self, ctx.guild, ctx)
+        mutedRoleID = await self.get_muted_role(ctx.guild, ctx)
         mutedRole = ctx.guild.get_role(mutedRoleID)
         await cases.CasesDB(self.bot.db).case_add("Mute", ctx.guild.id, member.id, reason, finalExpirationDate)
         await member.add_roles(mutedRole)
         await ctx.message.reply(embed=confirmEmbed)
         await ctx.message.delete()
 
+    async def get_muted_role(self, guild, ctx):
+        muted_id = await cases.CasesDB(self.bot.db).get_muted_role(guild.id)
+        try:
+            muted_id = int(muted_id)
+            return muted_id
+        except:
+            embed = e.EmbedBuilder(self.bot).build_embed(
+                description="Oops! You don't seem to have a muted role on my database, to set one up, either run the `setup muted <role_id>` or `setup muted create`.",
+                colour=discord.Colour.red())
+            await ctx.message.reply(embed=embed)
+
+    async def role_check(self, ctx, moderator, member):
+        if moderator.top_role > member.top_role:
+            return
+        if member.top_role > moderator.top_role:
+            embed = e.EmbedBuilder(
+                self.bot).build_embed(
+                title="Oops! Something went wrong.",
+                description=f"You can't ban someone with a higher role than you!\n\n"
+                            f"**{ctx.author.name}'s Top role:** {ctx.author.top_role.mention}\n"
+                            f"**{member.name}'s Top role:** {member.top_role.mention}",
+                colour=self.bot.red)
+            await ctx.message.reply(embed=embed, delete_after=10)
+            await ctx.message.delete()
+            return False
+
+    async def self_check(self, ctx, moderator, member):
+        if moderator != member:
+            return
+        elif moderator == member:
+            embed = e.EmbedBuilder(
+                self.bot).build_embed(
+                title="Oops! Something went wrong.",
+                description=f"You can't ban yourself! If this was a mistake please make sure you mentioned the right member, "
+                            f"or just don't try banning yourself again!",
+                colour=self.bot.red)
+            await ctx.message.reply(embed=embed, delete_after=10)
+            await ctx.message.delete()
+            return False
+
+    async def conf_embed(self, member, punishment, reason):
+        embed = e.EmbedBuilder(self.bot).build_embed(
+            title=f"{member} has been {punishment}!",
+            description=f"**Reason:** {reason}\n"
+                        f"**{punishment} at:** {self.bot.parsedate()}")
+        return embed
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
-
-async def get_muted_role(self, guild, ctx):
-    muted_id = await cases.CasesDB(self.bot.db).get_muted_role(guild.id)
-    try:
-        muted_id = int(muted_id)
-        return muted_id
-    except:
-        embed = e.EmbedBuilder(self.bot).build_embed(
-            description="Oops! You don't seem to have a muted role on my database, to set one up, either run the `setup muted <role_id>` or `setup muted create`.",
-            colour=discord.Colour.red())
-        await ctx.message.reply(embed=embed)
-
-async def role_check(self, ctx, moderator, member):
-    if moderator.top_role > member.top_role:
-        return
-    if member.top_role > moderator.top_role:
-        embed = e.EmbedBuilder(
-            self.bot).build_embed(
-            title="Oops! Something went wrong.",
-            description=f"You can't ban someone with a higher role than you!\n\n"
-            f"**{ctx.author.name}'s Top role:** {ctx.author.top_role.mention}\n"
-            f"**{member.name}'s Top role:** {member.top_role.mention}",
-            colour=self.bot.red)
-        await ctx.message.reply(embed=embed, delete_after=10)
-        await ctx.message.delete()
-        return False
-
-
-async def self_check(self, ctx, moderator, member):
-    if moderator != member:
-        return
-    elif moderator == member:
-        embed = e.EmbedBuilder(
-            self.bot).build_embed(
-            title="Oops! Something went wrong.",
-            description=f"You can't ban yourself! If this was a mistake please make sure you mentioned the right member, or just don't try banning yourself again!",
-            colour=self.bot.red)
-        await ctx.message.reply(embed=embed, delete_after=10)
-        await ctx.message.delete()
-        return False
-
-
-async def conf_embed(self, member, punishment, reason):
-    embed = e.EmbedBuilder(self.bot).build_embed(
-        title=f"{member} has been {punishment}!",
-        description=f"**Reason:** {reason}\n"
-                    f"**{punishment} at:** {self.bot.parsedate()}")
-    return embed
