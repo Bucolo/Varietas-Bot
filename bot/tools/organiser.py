@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ui import Button
 import datetime
 red = 0xff0000
 green = 0x00ff00
@@ -8,15 +9,15 @@ green = 0x00ff00
 #     if isinstance(error, commands.errors.CheckFailure):
 #         pass
 
-# Do this in the `async def on_command_error(ctx, error):` event
+# Do this in the ``async def on_command_error(ctx, error):`` event
 
 def admin():
     """decorator for permissions, so that only admins can access the command"""
     async def predicate(ctx):
-        print(ctx.author.guild_permissions.administrator)
-        if not ctx.author.guild_permissions.administrator:
+        perms = ctx.author.guild_permissions  # type: discord.Permissions
+        if not perms.ban_members:
             msg = discord.Embed(description="Peasant, you have no rights of access", color=red)
-            msg.set_footer(text="As a wise man once said: 'Do not mess with the lemony'")
+            msg.set_footer(text="As a wise man once said: 'Do not mess with Varietas'")
             await ctx.send(embed=msg)
             return False
         return True
@@ -27,9 +28,9 @@ def mod():
     """decorator for permissions, so that only mods () can access the command"""
     async def predicate(ctx):
         perms = ctx.author.guild_permissions  # type: discord.Permissions
-        if not perms.manage_channels:
+        if not perms.manage_messages:
             msg = discord.Embed(description="Peasant, you have no rights of access", color=red)
-            msg.set_footer(text="As a wise man once said: 'Do not mess with the lemony'")
+            msg.set_footer(text="As a wise man once said: 'Do not mess with Varietas'")
             await ctx.send(embed=msg)
             return False
         return True
@@ -94,3 +95,29 @@ class Paginator(discord.ui.View):
         self.increment_index()
         self.pages.label = f"{self.index+1}/{self.size}"
         await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
+
+class AddButton(discord.ui.View):
+    """Useful for adding buttons to a message, and have a callback for it, without having to build it every time.
+    Also can use linked buttons."""
+    def __init__(self, message: discord.Message, timeout=None, timeout_coroutine=None):
+        super().__init__(timeout=timeout)
+        self.message = message
+        self.timeout_coroutine = timeout_coroutine
+        self.buttons = []
+
+    def add_button(self, callback=None, **kwargs):
+        button = Button(**kwargs)
+        if callback is not None:
+            button.callback = callback
+        self.buttons.append(button)
+        self.add_item(button)
+
+    async def update(self):
+        await self.message.edit(view=self)
+
+    async def on_timeout(self) -> None:
+        if self.timeout_coroutine is not None:
+            await self.timeout_coroutine
+        for button in self.buttons:
+            button.disabled = True
+        await self.message.edit(view=self)

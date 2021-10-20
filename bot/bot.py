@@ -89,6 +89,18 @@ async def on_ready():
         bot.load_extension(e)
     print("Bot is now online")
 
+@bot.event
+async def on_command_error(ctx, error):
+    #  NEEDS TO HAVE THIS FOR THE CUSTOM DECORATOR TO WORK
+    if isinstance(error, commands.errors.CheckFailure):
+        pass
+    elif isinstance(error, commands.CommandOnCooldown):
+        cool_down = f"{round(error.retry_after, 2)}s" if round(error.retry_after, 2) < 60 else f"{error.retry_after // 60} min(s)"
+        await ctx.send(embed=discord.Embed(description=f"*Cool-down on command.*\ntry again"
+                                                       f" after **{cool_down}**",
+                                           color=0xff0000))
+    else:
+        raise error
 
 @bot.command()
 async def ping(ctx):
