@@ -215,8 +215,8 @@ class Items:
         return all_items_str, all_items_enum
 
 
-shop_items = {Items.glow_stone: 75000, Items.star: 10000, Items.fairy_dust: 5,
-              Items.fishing_rod: 13, Items.fried_chicken: 500, Items.shiny_hat: 10, Items.shrek: 2500, Items.bomb: 50}
+shop_items = {Items.glow_stone: 75000, Items.star: 10000, Items.fairy_dust: 900,
+              Items.fishing_rod: 1300, Items.fried_chicken: 500, Items.shiny_hat: 100, Items.shrek: 2500, Items.bomb: 5000}
 
 COLLECTIBLES = [Items.star, Items.glow_stone, Items.gold, Items.platinum, Items.silver, Items.shrek]
 
@@ -275,7 +275,7 @@ class Inventory(Economy):
         if user.id in self.inventory:
             self.inventory[user.id][item] = self.inventory[user.id][item] + 1 if item in self.inventory[user.id] else 1
         else:
-            self.inventory[user.id].update({item: 1})
+            self.inventory[user.id] = {item: 1}
         self.update_inv()
 
     def deduct_item(self, item, user: discord.Member):
