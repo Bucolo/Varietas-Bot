@@ -1,100 +1,87 @@
-from typing import Text
 import discord
+from discord.ext import commands
+from organiser import get_chunks
 
-arrow = "<a:arrow:882812954314154045>"
+class HelpCommand(discord.ui.View):
+    def __init__(self, bot):
+        super().__init__(timeout=None)
+        self.bot = bot  # type: commands.Bot
+        self.all_cmd = {}
+        self.main_embed = discord.Embed(color=0xFF8F8F)
+        for cmd in self.bot.commands:
+            if cmd.cog is None:
+                continue
+            cog_name = str(cmd.cog.__cog_name__)
+            if self.all_cmd.get(cog_name) is None:
+                self.all_cmd[cog_name] = {cmd.name: str(cmd.help)}
+            else:
+                self.all_cmd[cog_name][cmd.name] = str(cmd.help)
 
-class HelpEmbeds:
-    
-    def mainmenu():
-        ilink = "https://discord.com/api/oauth2/authorize?client_id=889185777555210281&permissions=8&scope=bot%20applications.commands"
-        embed = discord.Embed(title="Help Menu",
-                             description=f"Invite the bot to your server [here]({ilink})\n"
-                                         f"Join the support server [here](https://discord.gg/varietas)\n\n"
-                                         "**Categories:**\n"
-                                         f"{arrow} To view all command categories, click on the **dropdown menu below**!\n\n"
-                                         "**Guide:**\n"
-                                         f"{arrow} For command categories: Select a category below or do `v!help <category>`\n"
-                                         f"{arrow} For help with specific commands: do `v!help <command>`\n\n"
-                                         f"{arrow} If you run into any issues with any commands, feel free to join [the support server](https://discord.gg/varietas) for further assistance!",
-                            colour=0x66bb6a)
-        embed.set_footer(text="If the select menu disappears, it simply means the command has timed out. Run the command again to re-use the menu!")
-        return embed
-    
-    def moderation():
-        mod_commands = [["Ban", "Bans a member.\n`v!help ban`"], ["Kick", "Kicks a member.\n`v!help kick`"], ["Purge", "Purges a channel.\n`v!help purge`"], 
-         ["Slowmode", "Puts a channel in slowmode.\n`v!help slowmode`"], ["Tempmute", "Tempmutes a member.\n`v!help tempmute`"], 
-         ["Unban", "Unbans a member.\n`v!help unban`"]]
-        embed = discord.Embed(title="Help Menu: Moderation", colour=0x66bb6a)
-        for cmd in mod_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def news():
-        def import_news():
-            with open ("./info/news.txt", "r") as f:
-                text = f.read()
-                return text
-        embed = discord.Embed(title="Help Menu: News", description=import_news(), colour=0x66bb6a)
-        embed.set_thumbnail(url="https://images-ext-2.discordapp.net/external/bvk45myXtWIEDJEicf4KKvw4dbMtPMmAEWSx4MjWN10/%3Fwidth%3D676%26height%3D676/https/"
-                                "media.discordapp.net/attachments/839256502820536340/889582730998849587/varietas_python_trans.png")
-        return embed
-        
-    def miscellaneous():
-        misc_commands = [["Reminder", "Make a reminder.\n`v!help reminder`"]]
-        embed = discord.Embed(title="Help Menu: Miscellaneous", colour=0x66bb6a)
-        for cmd in misc_commands:
-                embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def utility():
-        util_commands = [["Help", "Displays this help menu.\n`v!help`"], ["Invite", "Invite me to your server.\n`v!help invite`"], 
-                         ["Ping", "Displays the bots latency.\n`v!help ping`"], ["Support", "Join the support server.\n`v!help support`"], 
-                         ["Feedback", "Give feedback on the bot!\n`v!help feedback`"], ["Info", "Displays key info about the bot.\n`v!help info`"]]
-        embed = discord.Embed(title="Help Menu: Utility", colour=0x66bb6a)
-        for cmd in util_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def music():
-        music_commands = [["Disconnect", "Disconnects the bot from the currently active vc.\n`v!help disconnect`"], ["Find", "Conducts a youtube search.\n`v!help find`"],
-                          ["Lyrics", "Find lyrics for a song.\n`v!help lyrics`"], ["Now", "Displays currently playing song.\n`v!help now`"],
-                          ["Pause", "Pause the currently playing song.\n`v!help pause`"], ["Play", "Add a song to the queue.\nv!help play"], 
-                          ["Playlist", "Make your own playlist.\n`v!help playlist`"], ["Queue", "Display the bot's song queue\n`v!help queue`"], 
-                          ["Remove", "Remove a song from the queue\n`v!help remove`"], ["Repeat", "Repeat the currently playing song\n`v!help repeat`"], 
-                          ["Seek", "Seek through the currently playing song.\n`v!help seek`"], ["Shuffle", "Shuffle the current queue.\n`v!help shuffle`"], 
-                          ["Skip", "Skip the currently playing song.\n`v!help skip`"], ["Stop", "Stop the queue.\n`v!help queue`"], 
-                          ["Volume", "Adjust the volume for the currently playing song.\n`v!help volume`"]]
-        embed = discord.Embed(title="Help Menu: Music", colour=0x66bb6a)
-        for cmd in music_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def fun():
-        fun_commands = [["Animal", "Sends a random animal.\n`v!help animal`"], ["Fact", "Sends a random fact.\n`v!help fact`"], ["Joke", "Sends a random joke.\n`v!help joke`"],
-                        ["Roast", "Sends a random roast.\n`v!help roast`"], ["Weather", "Find out the weather for a specfic location.\n`v!help weather`"],
-                        ["WPM", "Do a type speed test!\n`v!help wpm`"], ["WTP", "Who's that pokemon?\n`v!help wtp`"]]
-        embed = discord.Embed(title="Help Menu: Fun", colour=0x66bb6a)
-        for cmd in fun_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def economy():
-        eco_commands = [["Economy commands", "Coming soon!"]]
-        embed = discord.Embed(title="Help Menu: Economy", colour=0x66bb6a)
-        for cmd in eco_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def configuration():
-        conf_commands = [["Prefix", "Change the bots prefix.\n`v!help prefix`"]]
-        embed = discord.Embed(title="Help Menu: Configuration", colour=0x66bb6a)
-        for cmd in conf_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
-    
-    def administration():
-        admin_commands = [["Administration", "Probably wont keep this as admin is only for me and erase"]]
-        embed = discord.Embed(title="Help Menu: Administration", colour=0x66bb6a)
-        for cmd in admin_commands:
-            embed.add_field(name=cmd[0], value=cmd[1], inline=True)
-        return embed
+    async def callback(self, interaction: discord.Interaction):
+        label = interaction.data['values'][0]
+        if label.lower() == 'main menu':
+            return await interaction.message.edit(embed=self.main_embed)
+        embed = self.create_embeds()[label]
+        await interaction.message.edit(embed=embed)
+
+    def get_description_embed(self, command: str):
+        cmd = self.bot.get_command(command)
+        if cmd is not None:
+            embed = discord.Embed(colour=0xcc00ff, title=command.upper())
+            aliases = str(cmd.aliases).replace("'", '').replace('"', '')
+            if self.bot.get_command(command).help is None:
+                return discord.Embed(colour=0xff000c, description=f"```fix\nThis command has no description :(```"
+                                                                  f"```yaml\nAliases - {aliases if aliases != '[]' else 'None'}```",
+                                     title=command)
+            embed.description = f"```fix\n{cmd.help}```" \
+                                f"```yaml\naliases - {aliases if aliases != '[]' else 'None'}```"
+            return embed
+        return discord.Embed(colour=0xff0000, title="Invalid",
+                             description="This isn't a valid command are you like mentally challenged")
+
+    def merge(self, *mergeCogs: dict):
+        """MergeCogs parameter takes in a dict as formatted: {'name for set of commands': [cog_name1, cog_name2, cog_name3...]}"""
+        if mergeCogs:
+            for mergeCog in mergeCogs:  # merging CMDs from two or more cogs into one name: {'name': 'cog1', 'cog2'...}
+                CMDs = {}
+                name = list(mergeCog.keys())[0]
+                for cog_names in mergeCog[name]:
+                    CMDs.update(self.all_cmd[cog_names])
+                    del self.all_cmd[cog_names]
+                self.all_cmd[name] = CMDs
+
+    def create_embeds(self):
+        embeds = {}
+        for cog_name in self.all_cmd:
+            embed = discord.Embed(colour=0xFF8070, title=cog_name)
+            text = []
+            for cmd_name in self.all_cmd[cog_name]:
+                text.append(f"**{cmd_name}**: ``[{', '.join(self.bot.get_command(cmd_name).aliases)}]``\n")
+            text_split = get_chunks(10, text)
+            if len(text_split) == 1:
+                embed.description = f"🍋\n{''.join(text)}"
+                embeds[cog_name] = embed
+            else:
+                section = 0
+                for packet in text_split:
+                    section += 1
+                    embed.add_field(name=f"Section {section}", value=''.join(packet), inline=True)
+                embeds[cog_name] = embed
+        return embeds
+
+    async def send_message(self, ctx):
+        embeds = self.create_embeds()
+        options = [discord.SelectOption(label="Main Menu", emoji='📜')]
+        for name in embeds:
+            options.append(discord.SelectOption(label=name))
+        drop_down = discord.ui.Select(options=options, placeholder="View different categories 📜")
+        drop_down.callback = self.callback
+        self.add_item(drop_down)
+        self.main_embed.set_author(name="My swag commands", icon_url=ctx.author.avatar.url)
+        self.main_embed.add_field(name="Info", value="To View the Commands click on the **Dropdown Menu Below**\n"
+                                                     "- ``Square brackets = aliases for command name or shortcut name for the command``\n")
+        self.main_embed.description = "Watch a tutorial on the bot [here](https://www.youtube.com/watch?v=cvh0nX08nRw).\n" \
+                                      "Join my Epico [server](https://discord.gg/hExZSwKqeA)"
+        user = self.bot.get_user('add ur user ID')
+        self.main_embed.set_footer(text=f"Made by the almighty {user}", icon_url=user.avatar.url)
+        await ctx.send(embed=self.main_embed, view=self)
