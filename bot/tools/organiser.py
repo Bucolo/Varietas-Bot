@@ -41,6 +41,22 @@ def prettify_embed(text, colour=discord.Color.random()):
     embed = discord.Embed(description=text, colour=colour, timestamp=datetime.datetime.utcnow())
     return embed
 
+def get_chunks(interval: int, array: list):
+    """split up an array into a two dimensional array with the interval specified"""
+    total = []
+    a = 0
+    if len(array) <= interval:
+        return [array]
+    for i in range(len(array) // interval):
+        chunks = []
+        for _ in range(interval):
+            chunks.append(array[a])
+            a += 1
+        total.append(chunks)
+    if len(array) % interval != 0:
+        total.append(array[a:])
+    return total
+
 async def badArg(ctx, error, desc):
     if isinstance(error, commands.MissingRequiredArgument):
         msg = discord.Embed(description=desc, color=red)
