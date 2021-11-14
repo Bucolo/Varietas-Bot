@@ -12,7 +12,7 @@ class UserLock:
         self.lock = asyncio.Lock()
 
     def __call__(self, bot):
-        bot.add_user_lock(self)
+        bot.add_new_user_lock(self)
         return self.lock
 
     def locked(self):
