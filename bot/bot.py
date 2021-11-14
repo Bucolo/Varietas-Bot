@@ -36,7 +36,8 @@ class Varietas(commands.Bot):
         self.db = db.Database()
 
         self.logger = logging.getLogger(__name__)
-
+        self.user_lock={}
+        self.add_check(self.check_user_lock)
     async def _init(self):
         connection = self.db.get_connection()
         self.pool = connection.pool
@@ -52,6 +53,21 @@ class Varietas(commands.Bot):
             _.append(y - x)
 
         return (_[0] + _[1] + _[2]) / 3
+    
+    def add_new_user_lock(self,lock):
+        self.user_lock.update({lock.user.id: lock})
+        
+    @staticmethod
+    async def check_user_lock(ctx):
+        lock=ctx.bot.user_lock.get(ctx.author.id)
+        if lock:
+            if lock.locked():
+                raise lock.error
+            else:
+                ctx.bot.user_lock.pop(ctx.author.id, None)
+                return True
+        return True
+    
 
 
 bot = Varietas()
